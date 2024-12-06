@@ -1,0 +1,34 @@
+{% include "header.html" %}
+<main>
+  <div class="container py-4">
+    <div class="p-5 mb-4 bg-body-tertiary rounded-3">
+      <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Upload Climb</h1>
+        <p class="col-md-8 fs-4">Take a picture of the climb you want to try and select grade, style, and estimate date of removal if you want to recieve the reminder.</p>
+        <a class="btn btn-primary" href="{{ url_for('add') }}" role="button">Link</a>
+      </div>
+    </div>
+
+    <div class="row align-items-md-stretch">
+      <div class="col-md-6">
+        <div class="h-100 p-5 text-bg-dark rounded-3">
+          <h2>Log Your Try</h2>
+          <p>Update your try on the climbs. You can update completeness, your evaluation, The amount of tries. Leave a comment on the climbs! Your feedback could have impact on the setting team! </p>
+          <a class="btn btn-primary" href="{{ url_for('listings') }}" role="button">Link</a>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="h-100 p-5 bg-body-tertiary border rounded-3">
+          <h2>Climb History</h2>
+          <p>You want to share your story of memorable struggles and achievements? Look up on this page. You can retrieve climbs in the past you liked or hated. Share your story with your mates!</p>
+          <a class="btn btn-primary" href="{{ url_for('history') }}" role="button">Link</a>
+        </div>
+      </div>
+    </div>
+
+    <footer class="pt-3 mt-4 text-body-secondary border-top">
+      © 2024
+    </footer>
+  </div>
+</main>
+{% include "footer.html" %}

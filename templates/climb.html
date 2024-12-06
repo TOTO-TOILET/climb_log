@@ -1,0 +1,20 @@
+{% include "header.html" %}
+{% from "bootstrap5/form.html" import render_form %}
+<div class="container-fluid">
+  <div class="row">
+    <!-- Left Half: Image -->
+    <!-- Assume some climbs doesn't have a picture -->
+    {% if climb.photo %}
+    <div class="col-md-6 p-0">
+      <img src="{{ base_url + climb.photo }}" class="img-fluid w-100 h-100" alt="Responsive image" style="object-fit: cover;">
+    </div>
+    {% else %}
+    <div class="col-md-6 p-0">
+      <img src="/static/ericko-tandayu-cPVvXMIkhIM-unsplash.jpg" class="img-fluid w-100 h-100" alt="Responsive image" style="object-fit: cover;">
+    </div>
+    {% endif %}
+    {{ render_form(form) }}
+    </div>
+  </div>
+</div>
+{% include "footer.html" %}

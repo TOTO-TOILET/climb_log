@@ -1,0 +1,73 @@
+{% include "header.html" %}
+<body data-new-gr-c-s-check-loaded="14.1208.0" data-gr-ext-installed="">
+    <main>   
+      <section class="py-5 text-center container">
+        <div class="row py-lg-5">
+          <div class="col-lg-6 col-md-8 mx-auto">
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+            
+            {% elif climbs[0].completed == False %}
+            <h1 class="fw-light">Climbs not completed yet</h1>
+            <p class="lead text-muted">Something short and leading about the collection below—its contents, the creator, etc. Make it short and sweet, but not too short so folks don’t simply skip over it entirely.</p>
+            {% else %}
+            <h1 class="fw-light">Climbing History</h1>
+            <p class="lead text-muted">.</p>
+            {% endif %}
+            {% endwith %}
+            <p>
+              <a href="{{ url_for('add') }}" class="btn btn-primary my-2">Add Climb</a>
+              <a href="#" class="btn btn-secondary my-2">Secondary action</a>
+            </p>
+          </div>
+        </div>
+      </section>
+    
+      <div class="album py-5 bg-light">
+        <div class="container">
+    
+          <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+
+            {% for climb in climbs %}
+            <div class="col">
+              <div class="card shadow-sm">
+                  <!-- Replace the SVG with a div that uses the background image -->
+                  {% if climb.photo %}
+                  <div 
+                      class="card-img-top" 
+                      style="background-image: url('{{ base_url + climb.photo }}'); background-size: cover; background-position: center; height: 225px;">
+                  </div>
+                  {% else %}
+                  <div 
+                      class="card-img-top" 
+                      style="background-image: url('None'); background-size: cover; background-position: center; height: 225px;">
+                  </div>
+                  {% endif %}
+                  <div class="card-body">
+                      <p class="card-text">Grade: {{ climb.grade }}</p>
+                      <p class="card-text"></p>
+                      <div class="d-flex justify-content-between align-items-center">
+                          <div class="btn-group">
+                              <button type="button" class="btn btn-sm btn-outline-secondary">Edit</button>
+                              <a href="{{ url_for('detail', climb_id = climb.id)}}" class="btn btn-sm btn-outline-secondary">View</a>
+                          </div>
+                          <small class="text-muted">9 mins</small>
+                          <a href="{{ url_for('delete', id = climb.id) }}">❌</a>
+                      </div>
+                  </div>
+              </div>
+            </div>
+            {% endfor %}
+
+          </div>
+        </div>
+      </div>
+    
+    </main>
+    
+{% include "footer.html" %}
