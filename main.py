@@ -96,7 +96,7 @@ class Score(db.Model):
     performance_score: Mapped[int] = mapped_column(Integer, nullable=True)
     activity_score: Mapped[int] = mapped_column(Integer, nullable=True) # this stores number of calory burned 
     grade: Mapped[int] = mapped_column(Integer, nullable=True)
-    score_ownwer_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('users.id'))
+    score_owner_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('users.id'))
     recorded_at: Mapped[str] = mapped_column(String, nullable=True)
 
     score_owner = relationship('User', back_populates='scores')
@@ -148,7 +148,7 @@ def home():
                 i.date_logged = 0
                 i.date_logged = datetime.today().strftime('%Y-%m-%d')
         db.session.commit()
-
+    
     # score_demo()
     # demo_data()
     # demo()
@@ -633,8 +633,8 @@ def score_demo():
     from random import randint
     today = datetime.today()
 
-    # Generate demo data
-    for i in range(7):  # One week
+       # Generate demo data for one week
+    for i in range(7):  # 7 days
         date = today - timedelta(days=i)
         performance_score = randint(70, 100)  # Random performance score between 70 and 100
         activity_score = randint(150, 500)   # Random calorie burn (activity score)
@@ -645,15 +645,15 @@ def score_demo():
             performance_score=performance_score,
             activity_score=activity_score,
             grade=grade,
-            score_ownwer_id=3,
-            recorded_at=date.strftime('%Y-%m-%d')
+            score_owner_id=3,                # Ensure this field matches your model
+            recorded_at=date                 # Save as a datetime object
         )
 
         # Add the record to the database session
         db.session.add(new_score)
 
-        # Commit all changes to the database
-        db.session.commit()
+    # Commit all changes to the database
+    db.session.commit()
 
 import json
 @app.route('/demo')

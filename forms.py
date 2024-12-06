@@ -12,7 +12,7 @@ class LogForm(FlaskForm):
 
 class AddClimb(FlaskForm):
     img = FileField('Upload an image of the climb', validators=[Optional()])
-    style = SelectField('Select the style of the climb', choices=[('Climp', 'Climp'), ('Power', 'Power'), ('Pinch', 'Pinch'), ('Sloper', 'Sloper'), ('Balance', 'Balance'), ('Jug', 'Jug'), ('Pocket', 'Pocket'), ('Cordination', 'Cordination'), ('FootTech', 'Foot Technique'), ('Technical', 'Technical'), ('Endurance', 'Endurance')], validators=[Optional()])
+    style = SelectField('Select the style of the climb', choices=[('Finger', 'Finger'), ('Power', 'Power'), ('Pinch', 'Pinch'), ('Sloper', 'Sloper'), ('Balance', 'Balance'), ('Cordination', 'Cordination'), ('Technical', 'Technical'), ('Endurance', 'Endurance')], validators=[Optional()])
     when_stripped = DateField('When will the climb removed', format='%Y-%m-%d', validators=[Optional()])
     grade = SelectField('Grade', choices=[(i) for i in range(1, 15)], coerce=int, validators=[DataRequired()])
     submit = SubmitField('Upload')
