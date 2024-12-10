@@ -4,12 +4,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_required, logout_user, login_user, UserMixin, current_user
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Text, Boolean, Float, Table, Column, ForeignKey
-# from flask_ckeditor import CKEditor, CKEditorField
 from datetime import datetime, timedelta
 from forms import LogForm, AddClimb, LoginForm, RegisterForm
 import os
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+from analysis import ClimbingAnalyzer, DataFrame
+import requests
+
+# from flask_ckeditor import CKEditor, CKEditorField
 
 
 app = Flask(__name__)
@@ -17,6 +20,14 @@ app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 Bootstrap5(app)
+
+
+# initiate the analysis feauture created in a separate file analysis.py
+db_path = "/Users/yuta/Desktop/climb_proj/instance/climbs.db"
+df = DataFrame(db_path)
+analyzer = ClimbingAnalyzer(df)
+# print(analyzer.grade_attempted(3)) example use!
+
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -49,10 +60,10 @@ class User(UserMixin, db.Model):
     current_grade: Mapped[str] = mapped_column(String(10), nullable=True)
     home_gym: Mapped[str] = mapped_column(String(100), nullable=True)
 
-    
     climbs = relationship('Climb', back_populates='uploaded_by')
     comments = relationship('Comment', back_populates='comment_author')
     scores = relationship('Score', back_populates='score_owner')
+
 
 # Config Table for climbs
 class Climb(db.Model):
@@ -89,6 +100,7 @@ class Comment(db.Model):
 
     comment_author = relationship('User', back_populates='comments')
     parent_climb = relationship('Climb', back_populates='comments')
+
 
 # keep track of user's scores and grade over time
 class Score(db.Model):
@@ -148,7 +160,7 @@ def home():
                 i.date_logged = 0
                 i.date_logged = datetime.today().strftime('%Y-%m-%d')
         db.session.commit()
-    
+    print(analyzer.user_max_grade(3))
     # score_demo()
     # demo_data()
     # demo()
@@ -159,6 +171,7 @@ def home():
     #         climb.date_completed = datetime.now().date()
     #     db.session.commit()
     return render_template('index.html')
+
 
 @app.route('/listings')
 @login_required
@@ -172,11 +185,8 @@ def listings():
     if not climbs:
         flash("You currently have no climbs logged. Start logging your climbs!", "info")
 
-    # for climb in climbs[3]:
-    # climbs[4].photo = '/static/Screenshot 2024-11-17 at 14.34.24.png'
-    # db.session.commit()
-
     return render_template('climb_list.html', climbs = climbs, base_url = base_url)
+
 
 @app.route('/detail/<int:climb_id>', methods = ['GET', 'POST'])
 def detail(climb_id):
@@ -237,6 +247,7 @@ def detail(climb_id):
 
     return render_template('climb.html', base_url = base_url, climb = requested_climb, form = form)
 
+
 @app.route('/add', methods=['GET', 'POST'])
 def add():
     form = AddClimb()
@@ -276,6 +287,7 @@ def add():
 
     return render_template('add.html', form=form)
 
+
 @app.route('/history')
 @login_required
 def history():
@@ -284,6 +296,7 @@ def history():
         flash("You currently have no climbs logged. Start logging your climbs!", "info")
     base_url = 'http://127.0.0.1:5000' # head url for making img dynamic
     return render_template('climb_list.html', climbs = climbs, base_url = base_url)
+
 
 @app.route('/register', methods = ['GET', 'POST'])
 def register():
@@ -313,6 +326,7 @@ def register():
 
     return render_template('register.html', form = form)
 
+
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -332,11 +346,13 @@ def login():
 
     return render_template('login.html', form = form)
 
+
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
 
 @app.route('/delete/<id>')
 @login_required
@@ -345,7 +361,6 @@ def delete(id):
     db.session.delete(requested_climb)
     db.session.commit()
     return redirect(url_for('home'))
-
 
 
 
