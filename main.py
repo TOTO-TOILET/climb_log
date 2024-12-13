@@ -45,7 +45,7 @@ def load_user(user_id):
 class Base(DeclarativeBase):
     pass
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///climbs.db'
-db = SQLAlchemy(model_class=Base)
+db = SQLAlchemy(model_class=Base, session_options={"expire_on_commit": True})
 db.init_app(app)
 
 # Config Table for users 
@@ -131,10 +131,10 @@ def get_carolies_burned():
 
     carolies_buned = 0
 
-    carolies_hard = 60
-    carolies_moderate = 40
-    carolies_easy = 20
-    
+    carolies_hard = 50
+    carolies_moderate = 30
+    carolies_easy = 10
+    # print(daily_climbs)
     for i in daily_climbs:
         if i.grade >= int(current_user.current_grade) -1:
             carolies_buned += i.attempt * carolies_hard
@@ -144,6 +144,7 @@ def get_carolies_burned():
             carolies_buned += i.attempt * carolies_easy
 
     print(f'{carolies_buned} caloroes burned')
+    return carolies_buned
 
 
 @app.route('/')
@@ -160,7 +161,6 @@ def home():
                 i.date_logged = 0
                 i.date_logged = datetime.today().strftime('%Y-%m-%d')
         db.session.commit()
-    print(analyzer.user_max_grade(3))
     # score_demo()
     # demo_data()
     # demo()
@@ -202,6 +202,8 @@ def detail(climb_id):
             print('No match found')
         requested_climb = None
     if form.validate_on_submit():
+        db.session.expire_all()
+        current_user_id = current_user.id
         current_date = datetime.now().date()
         last_date = datetime.strptime(requested_climb.date_logged.split(' ')[0], '%Y-%m-%d').date()
         if form.sent.data:
@@ -214,14 +216,19 @@ def detail(climb_id):
                 requested_climb.attempt = form.attempt.data
             requested_climb.date_completed = current_date
             requested_climb.date_logged = current_date
-         
-            # new_log = Score(
-            #     performance_score = ,
-            #     activity_score = ,
-            #     grade = ,
-            #     recorded_at = datetime.now().date()
-            # )
-            # db.session.add(new_log)
+
+            p_score = analyzer.final_score(current_user_id)
+            print(p_score)
+            cal = get_carolies_burned()
+            grade = requested_climb.grade
+            new_log = Score(
+                score_owner_id = current_user_id,
+                performance_score = p_score,
+                activity_score = cal,
+                grade = grade,
+                recorded_at = datetime.now()
+            )
+            db.session.add(new_log)
             
         else:
             requested_climb.completed = False
@@ -233,15 +240,18 @@ def detail(climb_id):
             else:
                 requested_climb.attempt = form.attempt.data
             requested_climb.date_logged = current_date
-            # new_log = Score(
-            #     performance_score = ,
-            #     activity_score = ,
-            #     grade = ,
-            #     recorded_at = datetime.now().date()
-            # )
-            # db.session.add(new_log)
-        get_carolies_burned()
-
+            p_score = analyzer.final_score(current_user_id)
+            cal = get_carolies_burned()
+            grade = requested_climb.grade
+            new_log = Score(
+                score_owner_id = current_user_id,
+                performance_score = p_score,
+                activity_score = cal,
+                grade = grade,
+                recorded_at = datetime.now()
+            )
+            db.session.add(new_log)
+            # print(p_score)
         db.session.commit()
         return redirect(url_for('listings'))
 
@@ -673,6 +683,7 @@ def score_demo():
 import json
 @app.route('/demo')
 def dashboard():
+    db.session.expire_all()
     # Example data for graphs
     climbs_by_grade = {"V1": 10, "V2": 15, "V3": 5, "V4": 8, "V5": 20}  # Bar Chart
     activity_data = {
@@ -680,13 +691,24 @@ def dashboard():
         "attempts": [5, 8, 10],
         "grades": ["V3", "V4", "V5"],
     }  # Multi-Line Chart
-    strength_breakdown = {"Finger": 40, "Power": 35, "Endurance": 25}  # Donut Chart
-
+    # strength_breakdown = {"Finger": 40, "Power": 35, "Endurance": 25}  # Donut Chart
+    # print(json.dumps(analyzer.style_attempted(current_user.id)))
+    styles_attempted_today = analyzer.style_attempted(current_user.id)
+    cal_burned = analyzer.cal_burned(current_user.id)
+    p_score = analyzer.final_score(current_user.id)
+    weekly_grade = analyzer.weekly_average_grade(current_user.id)
+    completed_num = analyzer.climbs_completed(current_user.id)
+    all_climbs_num = analyzer.all_climbs_num(current_user.id)
     return render_template(
         "dashboard.html",
         climbs_by_grade=json.dumps(climbs_by_grade),
         activity_data=json.dumps(activity_data),
-        strength_breakdown=json.dumps(strength_breakdown),
+        styles_attempted_today=styles_attempted_today,
+        cal_burned=cal_burned,
+        p_score=p_score,
+        weekly_grade=weekly_grade,
+        completed_num=completed_num,
+        all_climbs_num=all_climbs_num
     )
 
 

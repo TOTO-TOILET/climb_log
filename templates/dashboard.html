@@ -12,7 +12,7 @@
                   <div class="row">
                     <div class="col">
                       <h5 class="card-title text-uppercase text-muted mb-0">Performance Score</h5>
-                      <span class="h2 font-weight-bold mb-0">92</span>
+                      <span class="h2 font-weight-bold mb-0">{{ p_score }}</span>
                     </div>
                     <div class="col-auto">
                       <div class="icon icon-shape bg-danger text-white rounded-circle shadow">
@@ -33,7 +33,7 @@
                   <div class="row">
                     <div class="col">
                       <h5 class="card-title text-uppercase text-muted mb-0">weekly Average Grade</h5>
-                      <span class="h2 font-weight-bold mb-0">V6</span>
+                      <span class="h2 font-weight-bold mb-0">V{{ weekly_grade }}</span>
                     </div>
                     <div class="col-auto">
                       <div class="icon icon-shape bg-warning text-white rounded-circle shadow">
@@ -54,7 +54,7 @@
                   <div class="row">
                     <div class="col">
                       <h5 class="card-title text-uppercase text-muted mb-0">Climbs completed</h5>
-                      <span class="h2 font-weight-bold mb-0">37</span>
+                      <span class="h2 font-weight-bold mb-0">{{ completed_num }}</span>
                     </div>
                     <div class="col-auto">
                       <div class="icon icon-shape bg-yellow text-white rounded-circle shadow">
@@ -63,7 +63,7 @@
                     </div>
                   </div>
                   <p class="mt-3 mb-0 text-muted text-sm">
-                    <span class="text-warning mr-2">Out of 54 total climbs registered</span>
+                    <span class="text-warning mr-2">Total {{ all_climbs_num }} climbs registered</span>
                   </p>
                 </div>
               </div>
@@ -73,8 +73,8 @@
                 <div class="card-body">
                   <div class="row">
                     <div class="col">
-                      <h5 class="card-title text-uppercase text-muted mb-0">weekly Attempts</h5>
-                      <span class="h2 font-weight-bold mb-0">123 (20034 cal)</span>
+                      <h5 class="card-title text-uppercase text-muted mb-0">weekly average grade</h5>
+                      <span class="h2 font-weight-bold mb-0">{{ cal_burned }} cal</span>
                     </div>
                     <div class="col-auto">
                       <div class="icon icon-shape bg-info text-white rounded-circle shadow">
@@ -195,15 +195,27 @@
         });
 
         // Donut Chart
-        Plotly.newPlot("donut-chart", [{
-            values: [40, 35, 25],
-            labels: ["Finger", "Power", "Endurance"],
-            type: "pie",
-            hole: 0.4
-        }], {
-            responsive: true,
-            autosize: true,
+        var jsonData = {{ styles_attempted_today | tojson }};
+    
+        // Process JSON data to extract labels and values
+        var labelCounts = {};
+        jsonData.forEach(function(item) {
+            var key = Object.keys(item)[0];
+            labelCounts[key] = (labelCounts[key] || 0) + item[key];
         });
+
+        // Extract labels and values
+        var dynamicLabels = Object.keys(labelCounts);
+        var dynamicValues = Object.values(labelCounts);
+        Plotly.newPlot("donut-chart", [{
+        values: dynamicValues, // Dynamic values from JSON data
+        labels: dynamicLabels, // Dynamic labels from JSON data
+        type: "pie",
+        hole: 0.4
+    }], {
+        responsive: true,
+        autosize: true,
+    });
 
         Plotly.newPlot("donut-chart-2", [{
         values: [50, 30, 20],
