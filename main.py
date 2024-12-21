@@ -131,9 +131,9 @@ def get_carolies_burned():
 
     carolies_buned = 0
 
-    carolies_hard = 50
-    carolies_moderate = 30
-    carolies_easy = 10
+    carolies_hard = 30
+    carolies_moderate = 15
+    carolies_easy = 5
     # print(daily_climbs)
     for i in daily_climbs:
         if i.grade >= int(current_user.current_grade) -1:
@@ -195,40 +195,30 @@ def detail(climb_id):
     """
     form = LogForm()
     base_url = 'http://127.0.0.1:5000' # head url for making img dynamic
+
     try:
         requested_climb = db.get_or_404(Climb, climb_id)
     except Exception as e:
         if not requested_climb:
             print('No match found')
         requested_climb = None
+
     if form.validate_on_submit():
-        db.session.expire_all()
-        current_user_id = current_user.id
         current_date = datetime.now().date()
         last_date = datetime.strptime(requested_climb.date_logged.split(' ')[0], '%Y-%m-%d').date()
+
         if form.sent.data:
             requested_climb.completed = True
             requested_climb.evaluation = form.evaluation.data
             requested_climb.total_attempts = requested_climb.total_attempts + form.attempt.data
+
             if last_date == current_date:
                 requested_climb.attempt = requested_climb.attempt + form.attempt.data
             else:
                 requested_climb.attempt = form.attempt.data
+
             requested_climb.date_completed = current_date
             requested_climb.date_logged = current_date
-
-            p_score = analyzer.final_score(current_user_id)
-            print(p_score)
-            cal = get_carolies_burned()
-            grade = requested_climb.grade
-            new_log = Score(
-                score_owner_id = current_user_id,
-                performance_score = p_score,
-                activity_score = cal,
-                grade = grade,
-                recorded_at = datetime.now()
-            )
-            db.session.add(new_log)
             
         else:
             requested_climb.completed = False
@@ -239,20 +229,35 @@ def detail(climb_id):
                 requested_climb.attempt = requested_climb.attempt + form.attempt.data
             else:
                 requested_climb.attempt = form.attempt.data
+
             requested_climb.date_logged = current_date
-            p_score = analyzer.final_score(current_user_id)
-            cal = get_carolies_burned()
-            grade = requested_climb.grade
-            new_log = Score(
-                score_owner_id = current_user_id,
-                performance_score = p_score,
-                activity_score = cal,
-                grade = grade,
-                recorded_at = datetime.now()
-            )
-            db.session.add(new_log)
-            # print(p_score)
+
         db.session.commit()
+        df.reload()
+
+        cal = get_carolies_burned()
+        p_score = analyzer.final_score(current_user.id)
+        weekly_grade = analyzer.weekly_average_grade(current_user.id)
+
+        new_log = Score(
+        score_owner_id = current_user.id,
+        performance_score = p_score,
+        activity_score = cal,
+        grade = weekly_grade,
+        recorded_at = datetime.now()
+        )
+
+        db.session.add(new_log)
+        db.session.commit()
+       
+        print('New log added to the Score table:', new_log.id)
+        db.session.expire_all()
+        
+
+        print('Pscore is ...', analyzer.final_score(current_user.id))
+        print('weekly grade is ...', analyzer.weekly_average_grade(current_user.id))
+        print('cal burned is ...', get_carolies_burned())
+
         return redirect(url_for('listings'))
 
     return render_template('climb.html', base_url = base_url, climb = requested_climb, form = form)
@@ -370,7 +375,7 @@ def delete(id):
     requested_climb = db.get_or_404(Climb, id)
     db.session.delete(requested_climb)
     db.session.commit()
-    return redirect(url_for('home'))
+    return redirect(url_for('history'))
 
 
 
@@ -684,6 +689,10 @@ import json
 @app.route('/demo')
 def dashboard():
     db.session.expire_all()
+
+    df.reload()
+    analyzer = ClimbingAnalyzer(df)
+    
     # Example data for graphs
     climbs_by_grade = {"V1": 10, "V2": 15, "V3": 5, "V4": 8, "V5": 20}  # Bar Chart
     activity_data = {
@@ -695,10 +704,14 @@ def dashboard():
     # print(json.dumps(analyzer.style_attempted(current_user.id)))
     styles_attempted_today = analyzer.style_attempted(current_user.id)
     cal_burned = analyzer.cal_burned(current_user.id)
-    p_score = analyzer.final_score(current_user.id)
+    p_score = df.score_df[df.score_df['score_owner_id'] == current_user.id].performance_score.iloc[-1]
     weekly_grade = analyzer.weekly_average_grade(current_user.id)
     completed_num = analyzer.climbs_completed(current_user.id)
-    all_climbs_num = analyzer.all_climbs_num(current_user.id)
+    all_climbs_num = analyzer.all_climbs_num(current_user.id) 
+    # cal = get_carolies_burned()
+
+    
+
     return render_template(
         "dashboard.html",
         climbs_by_grade=json.dumps(climbs_by_grade),

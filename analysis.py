@@ -5,22 +5,21 @@ from datetime import datetime, timedelta
 # Database connection class
 class DataFrame:
     def __init__(self, db_path):
-        # Establish connection and load data
-        connection = sqlite3.connect(db_path)
+        self.db_path = db_path
+        self.reload()  # Load data initially
 
-        # Load the climbs table
-        query_climb = 'SELECT * FROM climbs'
-        self.climbs_df = pd.read_sql_query(query_climb, connection)
+    def reload(self):
+        connection = sqlite3.connect(self.db_path)
 
-        # Load the users table
-        query_user = 'SELECT * FROM users'
-        self.user_df = pd.read_sql_query(query_user, connection)
+        # Reload the climbs table
+        self.climbs_df = pd.read_sql_query('SELECT * FROM climbs', connection)
 
-        # Load the score table
-        query_score = 'SELECT * FROM score'
-        self.score_df = pd.read_sql_query(query_score, connection)
+        # Reload the users table
+        self.user_df = pd.read_sql_query('SELECT * FROM users', connection)
 
-        # Close the connection
+        # Reload the score table
+        self.score_df = pd.read_sql_query('SELECT * FROM score', connection)
+
         connection.close()
 
 
@@ -30,6 +29,8 @@ class ClimbingAnalyzer:
         self.df = df  # Pass an instance of the DataFrame class
 
     def excercise_today(self, user_id):
+        self.df.reload()
+        
         user_climb_data = self.df.climbs_df[self.df.climbs_df.upload_author_id == user_id]
         user_climb_data['date_logged'] = pd.to_datetime(user_climb_data['date_logged'])
         today_data = user_climb_data[user_climb_data['date_logged'].dt.date == datetime.now().date()]
@@ -107,16 +108,12 @@ class ClimbingAnalyzer:
         return latest_per_day
 
     def weekly_average_grade(self, user_id):
-        score_df = self.df.score_df[self.df.score_df['score_owner_id'] == user_id]
-        score_df['recorded_at'] = pd.to_datetime(score_df['recorded_at'])
-        score_df['date'] = score_df['recorded_at'].dt.date
+        filtered_df = self.df.climbs_df[self.df.climbs_df['upload_author_id'] == user_id]
+        filtered_df['date_completed'] = pd.to_datetime(filtered_df['date_completed'])
+        filtered_df['date'] = filtered_df['date_completed'].dt.date
 
-        # Get the latest record for each day
-        latest_per_day = score_df.loc[score_df.groupby('date')['recorded_at'].idxmax()]
-
-        # Filter for the last 7 days
         one_week_ago = datetime.now().date() - timedelta(days=7)
-        last_week_data = latest_per_day[latest_per_day['date'] >= one_week_ago]
+        last_week_data = filtered_df[filtered_df['date'] >= one_week_ago]
         return round(last_week_data['grade'].mean(), 1)
 
     def all_completed_grade(self, user_id):
@@ -130,7 +127,7 @@ class ClimbingAnalyzer:
         return completed_climbs.groupby('style').count()[['id']]
 
     def style_attempted(self, user_id):
-        user_climbs = self.df.climbs_df[self.df.climbs_df['upload_author_id'] == user_id]
+        user_climbs = self.df.climbs_df[(self.df.climbs_df['upload_author_id'] == user_id)&(self.df.climbs_df['attempt'] != 0)]
         user_climbs['date_logged'] = pd.to_datetime(user_climbs['date_logged']).dt.date
         today_climbs = user_climbs[user_climbs['date_logged'] == datetime.now().date()]
         today_climbs = today_climbs.groupby('style').count()
@@ -145,11 +142,11 @@ class ClimbingAnalyzer:
         return today_climbs[['grade', 'attempt']]
 
     def all_climbs_num(self, user_id):
-        all_climbs_registered = df.climbs_df[df.climbs_df.upload_author_id == user_id]
+        all_climbs_registered = self.df.climbs_df[self.df.climbs_df.upload_author_id == user_id]
         return all_climbs_registered.count().id
 
     def cal_burned(self, user_id):
-        user_score = df.score_df[df.score_df['score_owner_id'] == user_id]
+        user_score = self.df.score_df[self.df.score_df['score_owner_id'] == user_id]
 
         if not user_score.empty:
             user_score = user_score.sort_values(by='id', ascending=False)
@@ -163,18 +160,17 @@ class ClimbingAnalyzer:
         else:
             print("No user scores found for the given user_id")
             return 0
-
         
     def climbs_completed(self, id):
-        all_climbs_registered = df.climbs_df[df.climbs_df.upload_author_id == id]
+        all_climbs_registered = self.df.climbs_df[self.df.climbs_df.upload_author_id == id]
         return all_climbs_registered[all_climbs_registered.completed == True].count().id
 
-# Instantiate and Use
+# # Instantiate and Use
 # db_path = "/Users/yuta/Desktop/climb_proj/instance/climbs.db"
 # df = DataFrame(db_path)
 # analyzer = ClimbingAnalyzer(df)
 
-# print("Today's exercise data:", analyzer.excercise_today(3))
+# print("Today's exercise data:", analyzer.weekly_average_grade(3))
 # print("Weekly average grade:", analyzer.weekly_average_grade(3))
 # print("Final cal for today:", analyzer.cal_burned(3))
 # print(analyzer.style_attempted(3))
