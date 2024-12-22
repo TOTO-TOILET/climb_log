@@ -708,20 +708,21 @@ def dashboard():
     weekly_grade = analyzer.weekly_average_grade(current_user.id)
     completed_num = analyzer.climbs_completed(current_user.id)
     all_climbs_num = analyzer.all_climbs_num(current_user.id) 
-    # cal = get_carolies_burned()
-
-    
-
+    score_and_cal = analyzer.score_and_calories(current_user.id)
+    todays_climbs_by_grade = analyzer.today_climbs_by_grade(current_user.id)
+    print(todays_climbs_by_grade)
     return render_template(
         "dashboard.html",
         climbs_by_grade=json.dumps(climbs_by_grade),
         activity_data=json.dumps(activity_data),
         styles_attempted_today=styles_attempted_today,
+        scores_and_cals = score_and_cal,
         cal_burned=cal_burned,
         p_score=p_score,
         weekly_grade=weekly_grade,
         completed_num=completed_num,
-        all_climbs_num=all_climbs_num
+        all_climbs_num=all_climbs_num,
+        todays_climbs_by_grade = todays_climbs_by_grade,
     )
 
 

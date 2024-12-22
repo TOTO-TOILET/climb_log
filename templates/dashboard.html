@@ -128,22 +128,6 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 mb-4">
-                <div class="card border-0 shadow">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Total completed grade</h5>
-                        <div id="bar-chart" style="height: 300px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-4">
-                <div class="card border-0 shadow">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Total completed style</h5>
-                        <div id="donut-chart2" style="height: 300px;"></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -164,35 +148,146 @@
     </div>
     
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script> -->
 
     <!-- Plotly Graphs -->
     <script>
         // Line Chart for Weekly Performance Score
-        Plotly.newPlot("line-chart", [{
-            x: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-            y: [85, 90, 88, 95, 92, 87, 93],
-            mode: "lines+markers",
-            name: "Performance Score",
-            line: { color: "blue" }
-        }], {
-            responsive: true,
-            autosize: true,
-            yaxis: { title: "Score", range: [0, 100] },  // Keeping 100 as the maximum score
-            margin: { t: 30, l: 40, r: 10, b: 30 }
+        var jsonData = {{ scores_and_cals | tojson }};
+        
+        // Debug the data
+        console.log("JSON Data:", jsonData);
+
+        if (jsonData.length === 0) {
+            // Handle no data case
+            document.getElementById("line-chart").innerHTML = `
+                <p style="text-align: center; color: gray;">No data available to generate a graph.</p>
+            `;
+        } else if (jsonData.length === 1) {
+            // Handle single data point case
+            console.log("Only one data point available.");
+            Plotly.newPlot("line-chart", [
+                {
+                    x: [jsonData[0].date],
+                    y: [jsonData[0].performance_score],
+                    mode: "markers",
+                    name: "Performance Score",
+                    marker: { color: "blue", size: 12 },
+                    hovertemplate: `
+                        <b>Performance Score:</b> %{y}<br>
+                        <b>Date:</b> %{x}<extra></extra>
+                    `
+                },
+                {
+                    x: [jsonData[0].date],
+                    y: [jsonData[0].activity_score],
+                    mode: "markers",
+                    name: "Calories Burned",
+                    marker: { color: "green", size: 12 },
+                    hovertemplate: `
+                        <b>Calories Burned:</b> %{y}<br>
+                        <b>Date:</b> %{x}<extra></extra>
+                    `
+                }
+            ], {
+                xaxis: { title: "Date", type: "category" },
+                yaxis: { title: "Score", range: [0, Math.max(jsonData[0].performance_score, jsonData[0].activity_score) * 1.2] },
+                margin: { t: 30, l: 40, r: 10, b: 30 }
+            });
+        } else {
+            // Handle multiple data points
+            var xDates = jsonData.map(item => item.date); // Use 'date' for x-axis
+            var performanceScores = jsonData.map(item => item.performance_score);
+            var activityScores = jsonData.map(item => item.activity_score);
+
+            Plotly.newPlot("line-chart", [
+                {
+                    x: xDates,
+                    y: performanceScores,
+                    mode: "lines+markers",
+                    name: "Performance Score",
+                    line: { color: "blue" },
+                    hovertemplate: `
+                        <b>Performance Score:</b> %{y}<br>
+                        <b>Date:</b> %{x}<extra></extra>
+                    `
+                },
+                {
+                    x: xDates,
+                    y: activityScores,
+                    mode: "lines+markers",
+                    name: "Calories Burned",
+                    line: { color: "green" },
+                    hovertemplate: `
+                        <b>Calories Burned:</b> %{y}<br>
+                        <b>Date:</b> %{x}<extra></extra>
+                    `
+                }
+            ], {
+                xaxis: { title: "Date", type: "category" },
+                yaxis: { title: "Score" },
+                margin: { t: 30, l: 40, r: 10, b: 30 }
+            });
+        }
+        // Bar Chart
+       
+    // Load JSON data dynamically
+    var jsonData = {{ todays_climbs_by_grade | tojson }};
+    console.log("JSON Data for Bar Chart:", jsonData);
+
+    if (jsonData.length === 0) {
+        // Handle no data case
+        document.getElementById("bar-chart").innerHTML = `
+            <p style="text-align: center; color: gray;">No data available to generate a graph.</p>
+        `;
+    } else {
+        // Prepare data for the graph
+        var xValues = []; // Original values for x-axis (unchanged)
+        var yValues = []; // Number of attempts for each climb (unchanged)
+        var barColors = []; // Colors based on completion (unchanged)
+
+        // Process JSON data
+        jsonData.forEach(climb => {
+            xValues.push(`V${climb.grade} (ID: ${climb.id})`); // Original x-axis value (unchanged)
+            yValues.push(climb.attempt);
+
+            // Assign colors based on completion status
+            if (climb.completed === 1) {
+                barColors.push("green"); // Completed climbs
+            } else {
+                barColors.push("red"); // Incomplete climbs
+            }
         });
 
-        // Bar Chart
-        Plotly.newPlot("bar-chart", [{
-            x: ["V1", "V2", "V3", "V4", "V5"],
-            y: [10, 15, 5, 8, 20],
-            type: "bar",
-            marker: { color: "blue" }
-        }], {
+        // Plot the bar chart
+        Plotly.newPlot("bar-chart", [
+            {
+                x: xValues,
+                y: yValues,
+                type: "bar",
+                marker: { color: barColors }, // Dynamic colors
+                hovertemplate: `
+                    
+                    <b>Attempts:</b> %{y}<br>
+                    <b>Status:</b> %{marker.color}<extra></extra>
+                `
+            }
+        ], {
             responsive: true,
             autosize: true,
-            margin: { t: 30, l: 40, r: 10, b: 30 }
+            margin: { t: 30, l: 40, r: 10, b: 50 },
+            xaxis: {
+                title: "Grade",
+                tickangle: -45, // Rotate labels for better readability
+                automargin: true, // Adjust margins to fit rotated labels
+                ticktext: jsonData.map(climb => `V${climb.grade}`), // Only show grade
+                tickvals: xValues // Use original x-axis values for positioning
+            },
+            yaxis: { title: "Number of Attempts" }
         });
+    }
+
+
 
         // Donut Chart
         var jsonData = {{ styles_attempted_today | tojson }};
@@ -217,18 +312,7 @@
         autosize: true,
     });
 
-        Plotly.newPlot("donut-chart-2", [{
-        values: [50, 30, 20],
-        labels: ["Dynamic", "Static", "Coordination"],
-        type: "pie",
-        hole: 0.4,
-        marker: {
-            colors: ["#ffcc99", "#ffb3e6", "#c2c2f0"] // Custom colors
-        }
-    }], {
-        responsive: true,
-        autosize: true,
-    });
+      
     </script>
 </body>
 {% include 'footer.html' %}

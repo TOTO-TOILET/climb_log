@@ -105,7 +105,8 @@ class ClimbingAnalyzer:
 
         # Get the latest record for each day
         latest_per_day = score_df.loc[score_df.groupby('date')['recorded_at'].idxmax()]
-        return latest_per_day
+        return latest_per_day.to_dict(orient='records')
+        
 
     def weekly_average_grade(self, user_id):
         filtered_df = self.df.climbs_df[self.df.climbs_df['upload_author_id'] == user_id]
@@ -134,6 +135,13 @@ class ClimbingAnalyzer:
         by_style = today_climbs[['id']]
         json_output = [{style: int(row['id'])} for style, row in by_style.iterrows()]
         return json_output
+    
+    def today_climbs_by_grade(self, id):
+        user_climbs = self.df.climbs_df[(self.df.climbs_df['upload_author_id'] == id)&(self.df.climbs_df['attempt'] != 0)]
+        user_climbs['date_logged'] = pd.to_datetime(user_climbs['date_logged']).dt.date
+        today_completed = user_climbs[user_climbs['date_logged'] == datetime.now().date()]
+        filtered = today_completed[['id', 'completed', 'grade', 'attempt']]
+        return filtered.to_dict(orient='records')
 
     def grade_attempted(self, user_id):
         user_climbs = self.df.climbs_df[self.df.climbs_df['upload_author_id'] == user_id]
@@ -164,16 +172,20 @@ class ClimbingAnalyzer:
     def climbs_completed(self, id):
         all_climbs_registered = self.df.climbs_df[self.df.climbs_df.upload_author_id == id]
         return all_climbs_registered[all_climbs_registered.completed == True].count().id
+    
+   
 
 # # Instantiate and Use
-# db_path = "/Users/yuta/Desktop/climb_proj/instance/climbs.db"
-# df = DataFrame(db_path)
-# analyzer = ClimbingAnalyzer(df)
+db_path = "/Users/yuta/Desktop/climb_proj/instance/climbs.db"
+df = DataFrame(db_path)
+analyzer = ClimbingAnalyzer(df)
 
 # print("Today's exercise data:", analyzer.weekly_average_grade(3))
 # print("Weekly average grade:", analyzer.weekly_average_grade(3))
 # print("Final cal for today:", analyzer.cal_burned(3))
 # print(analyzer.style_attempted(3))
 # print(analyzer.grade_attempted(3))
+# print(analyzer.score_and_calories(4))
+# print(analyzer.today_climbs_by_grade(6))
 
 
